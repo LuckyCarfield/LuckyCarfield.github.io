@@ -1,0 +1,36 @@
+I"$<p>一个刚刚转到前端的萌新，希望往后的日子里可以与大家一起进步</p>
+
+<h2> 我们的博客 </h2>
+
+<h3> 搭建博客遇到了问题解法方法 </h3>
+
+<p>查看 <a href="https://leopardpan.cn/support/">技术支持</a> 需求帮助</p>
+
+<p>博客模板会一直持续更新，请持续关注我，谢谢~</p>
+
+<section class="post-comments">
+
+  
+    <div id="disqus_thread"></div>
+    <script>
+    
+    var disqus_config = function () {
+        this.page.url = "https://luckycarfield.github.io/about/";
+        this.page.identifier = "/about/";
+    };
+    var disqus_shortname = 'leopard';
+    
+    (function() { // DON'T EDIT BELOW THIS LINE
+        var d = document, s = d.createElement('script');
+        s.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+            (d.head || d.body).appendChild(s);
+        })();
+    </script>
+    <noscript>要查看<a href="http://disqus.com/?ref_noscript"> Disqus </a>评论，请启用 JavaScript</noscript>
+    
+  
+
+</section>
+
+:ET
