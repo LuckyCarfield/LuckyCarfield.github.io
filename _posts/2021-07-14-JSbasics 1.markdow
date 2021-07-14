@@ -1,0 +1,18 @@
+---
+layout: post
+title:  "JavaScript基础"
+date:   2021-07-14 11:29:08 +0800
+categories: jekyll update
+---
+# 基础概念
+### 暂时性死区
+```
+console.log(aVar) // undefined
+console.log(aLet) // causes ReferenceError: aLet is notdefined
+var aVar = 1
+let aLet = 2
+```
+#### 为什么出现*暂时性死区*
+ES6 标准中对 let/const 声明中的解释 第13章，有如下一段文字：
+
+The variables are created when their containing Lexical Environment is instantiated but may not be accessed inany way until the variable’s LexicalBinding is evaluated.
