@@ -1,0 +1,499 @@
+---
+title:  "JavaScript基础-数组和字符串"
+date:   2021-07-14 11:29:08 +0800
+categories: jekyll update
+---
+
+# 核心概念
+涉及JavaScript的核心概念
+
+## 作用域
+
+### 函数作用域
+函数作用域和普通的理解的作用域没有差别，也就是词法作用域，即由coder写代码时将变量和块作用域写在哪里来决定
+
+可以通过立即执行函数表达式，防止名称污染和显式
+```
+let a = 2;
+
+(function(global){
+    let a = 3;
+    console.log(a);
+    console.log(global.a);
+})(window)
+```
+
+#### 块作用域
+在ES6中let和const还没出现之前，主要的块作用域包括with和try/catch
+```
+try{
+    undefined(); //执行一个非法操作来强制制造一个异常
+}catch(err){
+    console.log(err);
+}
+
+console.log(err); // ReferenceError
+```
+
+err只存在与catch分句内部
+
+##### 块作用域好处
+1. 垃圾回收
+```
+functionv process(data){
+    //something
+}
+
+var someReallyBigData = {...};
+
+process(someReallyBigData);
+
+var btn = document.getElementById("my_button");
+
+btn.addEventListener("click", function click(evt){
+    console.log("button clicked);
+}, /*capturingPhase=*/false );
+```
+click函数的点击回调并不需要someReallyBigData变量，理论上当process(...)执行后，内存中占用大量空间的数据结构就可以被来回收了。
+
+但是，由于click函数形成了一个覆盖整个作用域的闭包，JavaScript引擎极有可能依然保存着这个数据结构
+
+块作用域可以打消这种顾虑， 可以让引擎清楚的知道没有必要保存someReallyBigData了
+```
+functionv process(data){
+    //something
+}
+
+{
+    let someReallyBigData = {...};
+}
+
+process(someReallyBigData);
+
+var btn = document.getElementById("my_button");
+
+btn.addEventListener("click", function click(evt){
+    console.log("button clicked);
+}, /*capturingPhase=*/false );
+```
+2. 循环
+```
+for (let i=0; i<10; i++){
+    console.log(i);
+}
+
+console.log(i); //ReferenceError
+```
+for循环头部的let不仅将i绑定到了for循环中，事实上它将重新绑定到了循环的每一次迭代中，确保使用上一次循环迭代结束时的值重新进行赋值
+
+```
+{
+    let j;
+    for(j=0; j<10; j++){
+        let i = j; // 每个迭代重新绑定
+        console.log(i);
+    }
+
+}
+
+```
+
+#### 作用域闭包
+
+函数可以记住并访问所在词法作用域，并可以在当前词法作用域之外执行，就叫做**闭包**
+
+闭包不仅仅是一个好玩的玩具。在很多代码中都有闭包的身影
+```
+function wait(message){
+    setTimeout(function timer(){
+        console.log(message);
+    }, 1000);
+}
+
+wait("Hello")
+```
+将一个内部函数timer传递给setTimeout。timer具有涵盖wait()作用域的闭包，因此保有对变量message的引用
+
+在wait()执行1000浩渺之后，它的内部作用域并不会消失，timer函数依然保有wait()作用域的闭包
+
+在引擎内部，内置函数setTimeout()持有对一个参数的引用，引擎会调用这个函数，在这个例子中就是timer函数
+
+#### 模块
+闭包中最强大的功能非模块莫属, 最常见的实现方法就是模块暴露
+```
+function CoolModule(){
+
+    let something = "cool";
+    let another = [1, 2, 3];
+
+    function doSomething(){
+        console.log(something);
+    }
+
+    function doAnother(){
+        console.log(another.join("!"));
+    }
+
+    return {
+        doSomething: doSomething,
+        doAnother: doAnother
+    };
+}
+
+var foo = CoolModule();
+
+foo.doSomething();
+foo.doAnother();
+```
+
+上述的代码可以被任意调用多次，每次调用都会创建一个新的模块实例。当只需要一个实例时，可以对这个模块进行简单的改进
+```
+let foo = (function CoolModule(){
+
+    let something = "cool";
+    let another = [1, 2, 3];
+
+    function doSomething(){
+        console.log(something);
+    }
+
+    function doAnother(){
+        console.log(another.join("!"));
+    }
+
+    return {
+        doSomething: doSomething,
+        doAnother: doAnother
+    };
+})();
+```
+
+#### 现代的模块机制
+大多数模块依赖加载器/管理器本质上都是将这种模块定义封装进一个友好的API。
+```
+var MyModule = (function Manager(){
+    var modules = {};
+
+    funtion define(name, deps, impl){
+        for(let i=0; i<deps.length; i++){
+            deps[i] = modules[deps[i]];
+        }
+        modules[name] = impl.apply(impl, deps);
+    }
+
+    function get(name){
+        return modules[name];
+    }
+
+    return {
+        define: define, 
+        get: get
+    };
+})();
+```
+
+接下来展示如何定义模块
+```
+MyModules.define("bar", [], function(){
+    function hello(who){
+        return "Let me introduce: " + who;
+    }
+
+    return {
+        hello: hello
+    };
+});
+
+MyModules.define("foo", ["bar"], function(bar){
+    function awesome(){
+        console.log(bar.hello(hungry).toUpperCase());
+    }
+
+    return {
+        awesome: awesome
+    };
+});
+
+let bar = MyModule.get("bar");
+let foo = MyModule.get("foo");
+
+console.log(
+    bar.hello(hippo)
+); // Let me introduce: hippo
+
+foo.awesome() // LET ME INTRODUCE: HIPPO
+```
+
+### this
+
+首先区别于词法作用域，this**并非向我们所想的那样只想函数本身**，而是运行时绑定的，并不是在编写时绑定，this的绑定和函数声明的位置没有任何关系， 只取决于函数的调用方式。
+```
+function foo(num){
+    console.log("foo" + num);
+
+    this.count++;
+}
+
+foo.count = 0;
+
+let i;
+
+for(i=0; i<10; i++){
+    if(i > 5){
+        foo(i);
+    }
+}
+//foo: 6
+//f00: 7
+//foo: 8
+//foo: 9
+
+console.log(foo.count); //0
+```
+foo被调用了4次，但是foo.count为0，因为真正调用foo的是全局对象，所以this绑定到了全局对象上
+
+#### this绑定规则
+
+##### 默认绑定
+这条规则是无法应用其他规则时的默认规则,绑定全局对象
+```
+fucntion foo(){
+    console.log(this.a);
+}
+
+let a = 2;
+
+foo(); // 2
+```
+##### 隐式绑定
+判断调用位置是否有上下文对象， 或者说是否被某个对象拥有或者包含
+```
+fucntion foo(){
+    console.log(a);
+}
+
+let obj = {
+    let a:2,
+    let foo: foo
+};
+
+obj.foo(); //2
+```
+调用位置会使用obj上下文来引用函数， 因此可以说函数被调用时obj对象“拥有”或者“包含”函数引用，也可以说函数“拥有”上下文对象obj的引用。
+
+隐式绑定会把函数调用中的this绑定到这个上下文对象。
+
+###### 隐式绑定丢失
+```
+function foo(){
+    console.log(this.a);
+}
+
+let obj = {
+    a: 2,
+    foo; foo
+};
+
+var bar = obj.foo;
+var a = "oops"
+
+bar(); // oops
+```
+bar是obj.foo的引用，但是实际上，它引用的是foo函数本身，因此此时的bar()是不带任何修饰(即没有任何上下文对象)的函数调用，因此应用了默认绑定。
+
+一种更加微妙，且更加常见的情况发生在传入回调函数时
+```
+function foo(){
+    console.log(this.a);
+}
+
+function doFoo(fn){
+    fn();
+}
+
+let obj = {
+    a: 2,
+    foo; foo
+};
+
+var a = "oops"
+
+doFoo(obj.foo); // "oops"
+```
+
+回调函数丢失this绑定非常常见，除此之外，还有一种情况this会出乎意料：调用回调函数的函数可能会修改this。在一些流行的JavaScript库中事件处理器常会把回调函数的this强行绑定到触发事件的DOM元素上。
+
+因此，我们需要想办法控制调用位置以得到期望的绑定。
+
+#### 显示绑定
+
+具体来说，可以通过call和apply方法在某个对象上强制调用函数
+
+```
+function foo(){
+    console.log(this.a);
+}
+
+let obj = {
+    a: 2
+};
+
+foo.call(obj); //2
+```
+通过foo.call，可以调用foo时强制把它的this绑定到obj上。
+
+对于一个原始值(字符串、布尔或者数字类型)来当作this的绑定对象时， 这个原始值会转化为它的对象形式(也就是new String()、new Boolean())，这通常被称为**装箱**
+
+##### 硬绑定
+
+硬绑定有一个问题就是硬绑定之后的对象无法修改它的this
+```
+function foo(){
+    console.log(this.a);
+}
+
+let obj = {
+    a: 2
+};
+
+var bar = function(){
+    foo.call(obj);
+};
+bar(); //2
+setTimeout(bar, 100); //
+//硬绑定的bar不能再修改它的this
+bar.call(window);
+```
+
+通过创建一个可以重复使用的辅助函数, ES5中提供了内置的方法Function.prototype.bind
+```
+function foo(something){
+    console.log(this.a, something);
+}
+
+//简单的bind函数实现
+functiong bind(fn, obj){
+    return function(){
+        return fn.apply(obj, arguments);
+    };
+}
+
+let obj = {
+    a: 2
+};
+
+var bar = bind(foo, obj);
+var b = bar(3); //2 3 
+```
+
+第三方库的许多函数，以及Javascript许多内置函数都提供了一种可选的参数，通常被称作“上下文”(context)，其作用和bind()一样，确保回调函数使用指定的this
+
+```
+function foo(el){
+    console.log(el. this.id);
+}
+let obj = {
+    id: "awesome"
+};
+
+//调用foo()时把this绑定到obj
+[1, 2, 3].forEach(foo, obj);
+```
+
+#### new绑定
+使用new来调用函数，或者说发生构造函数时， 会自动执行下面的操作
+- 创建一个全新的对象
+- 对这个对象执行[[prototype]]连接
+- 这个新对象对绑定到函数调用的this
+- 如果函数没有返回对象，那么new表达式重的函数调用会自动返回这个新对象
+
+#### 优先级
+
+1. 函数是否在new中调用，如果是的话this绑定的是新创建的对象
+2. 函数是否通过call、apply、bind硬绑定
+3. 函数是否在某个上下文对象中调用
+4. 如果都不是的话，使用默认绑定。如果在严格模式下，就绑定到undefined，否则绑定到全局对象
+
+#### 绑定例外
+
+##### 被忽略的this
+
+如果把null或者undefined作为this的绑定对象传入call、apply或者bind，这些值在调用时被忽略，实际执行的是默认绑定
+```
+//常见的比如使用apply来“展开”一个参数数组, ES6中使用...来替代apply，foo(...[1,2])
+function foo(a, b){
+    console.log("a:" + a + ", b:" + b);
+}
+
+foo.apply(null, [2, 3]); // a:2, b:3
+
+//使用bind进行柯里化，即预设一些参数
+var bar = foo.bind(null, 2);
+bar(3);// a:2, b:3
+```
+
+##### 软绑定
+改变硬绑定之后就无法使用隐式绑定或者显示绑定来修改this的缺点
+
+#### this的词法(箭头函数)
+
+ES6中新增了一个箭头函数=>,箭头函数不使用this的四种标准规则，而是根据外层(函数或者全局)作用域来决定this
+
+```
+function foo(){
+    return (a) => {
+        // this继承自foo()
+        console.log(this.a);
+    }
+}
+
+let obj1 = {
+    a: 2
+};
+
+let obj2 = {
+    a: 3
+};
+
+let bar = foo.call(obj1); // 2
+
+bar.call(obj2)
+```
+上述代码中foo()内部创建的箭头函数会捕获调用时foo()的this，由于foo的this绑定到obj1上，bar(引用箭头函数)的this也绑定到obj1上，箭头函数的绑定无法被修改。(**new也不行！**)
+
+```
+//因此箭头函数最常用于回调函数中，例如事件处理器或者定时器
+function foo(){
+    setTimeout(() => {
+        // this词法上继承自foo()
+        console.log(this.a);
+    }, 100)
+}
+
+let obj = {
+    a: 2
+};
+
+foo.call(obj); // 2
+```
+在ES6之前通常通过这样的方式实现和箭头函数同样的功能
+```
+function foo(){
+    var self = this; //lexical capture of this
+    setTimeout(() => {
+        // this词法上继承自foo()
+        console.log(self.a);
+    }, 100)
+}
+
+let obj = {
+    a: 2
+};
+
+foo.call(obj); // 2
+```
+
+
+
+
+

@@ -1,18 +1,234 @@
 ---
 layout: post
-title:  "JavaScript基础"
+title:  "JavaScript基础-undefined、null、boolean和数值"
 date:   2021-07-14 11:29:08 +0800
 categories: jekyll update
 ---
-# 基础概念
-### 暂时性死区
-```
-console.log(aVar) // undefined
-console.log(aLet) // causes ReferenceError: aLet is notdefined
-var aVar = 1
-let aLet = 2
-```
-#### 为什么出现*暂时性死区*
-ES6 标准中对 let/const 声明中的解释 第13章，有如下一段文字：
+# 目录
+<!-- vscode-markdown-toc -->
+* 1. [null、undefined和boolean](#null、undefined和boolean)
+* 2. [数值](#数值)
+    * 2.1. [数值精度](#数值精度)
+    * 2.2. [特殊数值](#特殊数值)
+    * 2.3. [数值相关的全局方法](#数值相关的全局方法)
 
-The variables are created when their containing Lexical Environment is instantiated but may not be accessed inany way until the variable’s LexicalBinding is evaluated.
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+
+# 基本数据类型
+ECMAScript有6种简单的数据类型：Undefined、Null、Boolean、Number、String和Symbol（ECMAScript6新增）。以及一种复杂的数据类型Object。
+
+通常，数值、字符串、布尔值这三种类型，合称为原始类型（primitive type）的值，即它们是最基本的数据类型，不能再细分了。对象则称为合成类型（complex type）的值，因为一个对象往往是多个原始类型的值的合成，可以看作是一个存放各种值的容器。至于undefined和null，一般将它们看成两个特殊值。
+
+对象是最复杂的数据类型，又可以分成三个子类型。
+
+- 狭义对象（object）
+- 数组（array）
+- 函数（function）
+
+javaScript 有三种方法，可以确定一个值到底是什么类型。
+
+- typeof运算符
+- instanceof运算符
+- Object.prototype.toString方法
+```javascript
+typeof 123 // "number"
+typeof '123' // "string"
+typeof false // "boolean"
+function f(a, b) {}
+typeof f // "function" function函数实际上是object的一个“子类型”。具体来说，函数是“可调用对象”，它有一个内部属性[[Call]],该属性使其可以被调用。
+f.length; // 2 函数不仅是对象，还可以拥有属性，函数对象的length属性是其声明的参数个数
+typeof undefined // "undefined" ES6之后不能通过typeof v === "undefined"来判断未声明的变量，因为“暂时性死区”会导致let/const定义的变量在未lexicalbinding evaluate之前使用，typeof运行时就会抛出一个ReferenceError
+typeof window // "object"
+typeof {} // "object"
+typeof [] // "object" 空数组（[]）的类型也是object，这表示在 JavaScript 内部，数组本质上只是一种特殊的对象。这里顺便提一下，instanceof运算符可以区分数组和对象。
+typeof null // "object" null的类型是object，这是由于历史原因造成的。1995年的 JavaScript 语言第一版，只设计了五种数据类型（对象、整数、浮点数、字符串和布尔值），没考虑null，只把它当作object的一种特殊值。后来null独立出来，作为一种单独的数据类型，为了兼容以前的代码，typeof null返回object就没法改变了。
+```
+##  1. <a name='null、undefined和boolean'></a>null、undefined和boolean
+**undefined**可以理解为使用var或者let声明了变量但是没有初始化，js就自动将其赋初值为undefined。
+
+**null**可以理解为一个空对象指针，因此typeof null返回object，当定义将来要保存对象值的变量时，建议使用null来初始化，这样只要检查这个变量的值是否是null就可以知道这个变量是否在后来被重新赋予了一个对象的引用。
+
+因此对于null，可以使用复合条件来检测null值的类型
+```javascript
+var a = null;
+(!a && typeof a === "object"); // true
+```
+
+**boolean**转换规则是除了下面六个值被转为false，其他值都视为true。
+
+- undefined
+- null
+- false
+- 0
+- NaN
+- ""或''（空字符串）
+
+注意：空数组（[]）和空对象（{}）对应的布尔值，都是true
+
+##  2. <a name='数值'></a>数值
+###  2.1. <a name='数值精度'></a>数值精度
+JavaScript 内部，所有数字都是以64位浮点数形式储存，即使整数也是如此。所以，1与1.0是相同的，是同一个数。
+
+由于浮点数不是精确的值，所以涉及小数的比较和运算要特别小心。
+```javascript
+0.1 + 0.2 === 0.3 // false
+0.3 / 0.1 // 2.9999999999999996
+
+(0.3 - 0.2) === (0.2 - 0.1) // false
+```
+为了解决这个问题，最常见的做法是设置一个误差范围即machine epsilon，对JavaScript来说，这个值通常是2^-52
+
+在ES6之前通常可以这样设置
+```javascript
+if(!Number.EPSILON){
+    Number.EPSILON = Math.pow(2, -52);
+}
+```
+
+ES6中对Number.EPSILON的值进行了定义，可以直接拿来比较两个数字是否相等
+```javascript
+function numberCompare(num1, num2){
+    return Math.abs(num1 - num2) < Number.EPSILON;
+}
+```
+
+根据国际标准 IEEE 754，JavaScript 浮点数的64个二进制位，从最左边开始，是这样组成的。
+
+- 第1位：符号位，0表示正数，1表示负数
+
+- 第2位到第12位（共11位）：指数部分
+
+- 第13位到第64位（共52位）：小数部分（即有效数字）
+
+符号位决定了一个数的正负，指数部分决定了数值的大小，小数部分决定了数值的精度。也就是说，有效数字这时总是1.xx...xx的形式，其中xx..xx的部分保存在64位浮点数之中，最长可能为52位。因此，JavaScript 提供的有效数字最长为53个二进制位。
+```javascript
+(-1)^符号位 * 1.xx...xx * 2^指数部分
+```
+大于2的53次方的数值，都无法保持精度。由于2的53次方是一个16位的十进制数值，所以简单的法则就是，JavaScript 对15位的十进制数都可以精确处理。
+```
+Math.pow(2, 53) // 9007199254740992
+
+// 多出的三个有效数字，将无法保存
+9007199254740992111 // 9007199254740992000
+```
+JavaScript 提供Number对象的MAX_VALUE和MIN_VALUE属性，返回可以表示的具体的最大值和最小值。
+
+数字的呈现方式决定了“整数”的安全范围远远小于Number.MAX_VALUE，能够被“安全”呈现的最大整数是2^53-1，即9007199254740991（16位），在ES6中被定义为Number.MAX_SAFE_INTEGER；最小整数是-9007199254740991，在ES6中被定义为Number.MIN_SAFE_INTEGER。
+
+###  2.2. <a name='特殊数值'></a>特殊数值
+- undedined和null既是类型也是值，可以通过void 0得到undefined，也可以通过void让表达式不返回任何结果。
+- NaN可以理解为“不是数字的数字”，typeof NaN输出“number”，且和自身不相等NaN 1= NaN为true，ES6之后可以通过Number.isNaN()函数来判断
+- Infinity无穷数1/0得到Infinity，-1/0得到Infinity
+- 零值，几乎所有场合，正零和负零都会被当作正常的0。唯一有区别的场合是，+0或-0当作分母，返回的值是不相等的。
+
+```javascript
+//区分+0和-0
+function isNegZero(n){
+    n = Number(n);
+    return (n === 0) && (1/n === -Infinity);
+}
+```
+
+###  2.3. <a name='数值相关的全局方法'></a>数值相关的全局方法
+（1）parseInt：
+
+将字符串转为整数
+```javascript
+parseInt('123') // 123
+
+// 如果字符串头部有空格，空格会被自动去除。
+parseInt('   81') // 81 
+
+//如果parseInt的参数不是字符串，则会先转为字符串再转换。
+parseInt(1.23) // 1
+// 等同于
+parseInt('1.23') // 1 
+
+//字符串转为整数的时候，是一个个字符依次转换，如果遇到不能转为数字的字符，就不再进行下去，返回已经转好的部分。
+parseInt('8a') // 8
+parseInt('12.34') // 12
+
+//如果字符串的第一个字符不能转化为数字（后面跟着数字的正负号除外），返回NaN。
+parseInt('abc') // NaN
+parseInt('.3') // NaN
+parseInt('') // NaN
+parseInt('+1') // 1
+
+//如果字符串以0x或0X开头，parseInt会将其按照十六进制数解析，返回十进制数
+parseInt('0x10') // 16
+
+//对于那些会自动转为科学计数法的数字，parseInt会将科学计数法的表示方法视为字符串，因此导致一些奇怪的结果。
+
+parseInt(1000000000000000000000.5) // 1
+// 等同于
+parseInt('1e+21') // 1
+
+parseInt(0.0000008) // 8
+// 等同于
+parseInt('8e-7') // 8
+```
+进制转换：
+parseInt方法还可以接受第二个参数（2到36之间），表示被解析的值的进制，返回该值对应的十进制数。默认情况下，parseInt的第二个参数为10，即默认是十进制转十进制。
+
+```javascript
+parseInt('1000') // 1000
+// 等同于
+parseInt('1000', 10) // 1000
+parseInt('1000', 2) // 8
+parseInt('1000', 6) // 216
+parseInt('1000', 8) // 512
+
+//前面说过，如果parseInt的第一个参数不是字符串，会被先转为字符串。这会导致一些令人意外的结果。
+parseInt(0x11, 36) // 43
+parseInt(0x11, 2) // 1
+
+// 等同于
+parseInt(String(0x11), 36)
+parseInt(String(0x11), 2)
+
+// 等同于
+parseInt('17', 36)
+parseInt('17', 2)
+//上面代码中，十六进制的0x11会被先转为十进制的17，再转为字符串。然后，再用36进制或二进制解读字符串17，最后返回结果43和1。
+```
+
+(2)parseFloat():将一个字符串转为浮点数
+```javascript
+parseFloat('3.14') // 3.14
+
+//如果字符串符合科学计数法，则会进行相应的转换。
+parseFloat('314e-2') // 3.14
+parseFloat('0.0314E+2') // 3.14
+
+//如果字符串包含不能转为浮点数的字符，则不再进行往后转换，返回已经转好的部分
+parseFloat('3.14more non-digit characters') // 3.14
+
+//上面代码中，尤其值得注意，parseFloat会将空字符串转为NaN。这些特点使得parseFloat的转换结果不同于Number函数。
+parseFloat(true)  // NaN
+Number(true) // 1
+
+parseFloat(null) // NaN
+Number(null) // 0
+
+parseFloat('') // NaN
+Number('') // 0
+
+parseFloat('123.45#') // 123.45
+Number('123.45#') // NaN
+```
+(3) isNaN判断一个值是否为NaN(ES6之后可以通过Number.isNaN())
+
+(4) isFinite()方法返回一个布尔值，表示某个值是否为正常的数值,除了Infinity、-Infinity、NaN和undefined这几个值会返回false，isFinite对于其他的数值都会返回true。
+
+
+
+
+
+
+
+
+

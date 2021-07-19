@@ -1,0 +1,326 @@
+---
+layout: post
+title:  "JavaScript基础-数组和字符串"
+date:   2021-07-14 11:29:08 +0800
+categories: jekyll update
+---
+
+# 基本数据类型
+### 3. 数组
+
+本质上，数组属于一种特殊的对象。typeof运算符会返回数组的类型是object
+```
+typeof [1, 2, 3] // "object"
+
+```
+数组的特殊性体现在，它的键名是按次序排列的一组整数（0，1，2...）
+```
+var arr = ['a', 'b', 'c'];
+
+Object.keys(arr)
+// ["0", "1", "2"]
+```
+由于数组成员的键名是固定的（默认总是0、1、2...），因此数组不用为每个元素指定键名，而对象的每个成员都必须指定键名。~~JavaScript 语言规定，对象的键名一律为字符串，所以，数组的键名其实也是字符串。之所以可以用数值读取，是因为非字符串的键名会被转为字符串。~~(JavaScript数组下标值的范围为0到2的32次方。对于任意给定的数字下标值，如果不在此范围内，js会将它转换为一个字符串，并将该下标对应的值作为该数组对象的一个属性值而不是数组元素，例如array[-1] = “yes” 其实就相当于给array对象添加了一个名为-1的属性，属性值为yes。如果该下标值在合法范围内，则无论该下标值是数字还是数字字符串，都一律会被转化为数字使用，即 array[“100”] = 0 和 array[100] = 0 执行的是相同的操作。)
+```
+arr['0'] // 'a'
+arr[0] // 'a'
+```
+**注意**：对象有两种读取成员的方法：点结构（object.key）和方括号结构（object[key]）。但是，对于数值的键名，不能使用点结构。
+
+### 3.1 length
+数组的*length*属性返回数组的成员数量，JavaScript 使用一个32位整数，保存数组的元素个数。这意味着，数组成员最多只有 4294967295 个（232 - 1）个，也就是说length属性的最大值就是 4294967295。
+
+只要是数组，就一定有length属性。该属性是一个动态的值，等于键名中的最大整数加上1。
+```
+var arr = ['a', 'b'];
+arr.length // 2
+
+arr[2] = 'c';
+arr.length // 3
+
+arr[9] = 'd';
+arr.length // 10
+```
+
+上面代码表示，数组的数字键不需要连续，length属性的值总是比最大的那个整数键大1。另外，这也表明数组是一种动态的数据结构，可以随时增减数组的成员。
+
+length属性是可写的。如果人为设置一个小于当前成员个数的值，该数组的成员数量会自动减少到length设置的值。
+```
+let arr = [ 'a', 'b', 'c' ];
+arr.length // 3
+
+arr.length = 2;
+arr // ["a", "b"]
+
+//清空数组的一个有效方法，就是将length属性设为0
+arr.length = 0;
+arr // []
+
+//如果人为设置length大于当前元素个数，则数组的成员数量会增加到这个值，新增的位置都是空位，而不是undfined，如果是空位，使用数组的forEach方法、for...in结构、以及Object.keys方法进行遍历，空位都会被跳过。
+arr.length = 4;
+a[3] // undefined 虽然显示是undefined，但是其实是空值，而不是真正意义上的undefined
+```
+
+值得注意的是，由于数组本质上是一种对象，所以可以为数组添加属性，但是这不影响length属性的值。
+```
+var a = [];
+
+a['p'] = 'abc';
+a.length // 0
+
+a[2.1] = 'abc';
+a.length // 0
+```
+上面代码将数组的键分别设为字符串和小数，结果都不影响length属性。因为，length属性的值就是等于最大的数字键加1，而这个数组没有整数键，所以length属性保持为0。(Javascript的数组其实不像PHP或者其他一些语言一样拥有真正的字符串下标，当我们试图为一个js数组添加字符串下标的时候，其实就相当于为该数组对象添加了一个属性，属性名称就是我们所谓的“字符串下标”。由于为数组对象添加属性不会影响到同为该对象属性的length的值，因此该值将始终为零。同样地，.pop()和.shift()等作用于数组元素的方法也不能够作用于这些对象属性。因此，如果要使用的是一个完全由“字符串下标”组成的数组，那还是将其声明为一个Object类型的对象要更好一些。
+
+)
+```
+var arr = [];
+arr[-1] = 'a';
+arr[Math.pow(2, 32)] = 'b';
+
+arr.length // 0
+arr[-1] // "a"
+arr[4294967296] // "b"
+```
+
+### 3.2 in运算符
+检查某个键名是否存在的运算符in，适用于对象，也适用于数组。
+```
+let arr = [ 'a', 'b', 'c' ];
+2 in arr  // true
+'2' in arr // true
+4 in arr // false
+
+//注意，如果数组的某个位置是空位，in运算符返回false
+let arr = [];
+arr[100] = 'a';
+
+100 in arr // true
+1 in arr // false
+```
+
+### 3.3 for...in 循环和数组的遍历
+for...in循环不仅可以遍历对象，也可以遍历数组，毕竟数组只是一种特殊对象。
+```
+let a = [1, 2, 3];
+
+for (var i in a) {
+  console.log(a[i]); // 1 2 3
+}
+
+//但是，for...in不仅会遍历数组所有的数字键，还会遍历非数字键。
+a.foo = true;
+
+for (var key in a) {
+  console.log(key); // 1 2 3 true
+}
+
+//上面代码在遍历数组时，也遍历到了非整数键foo。所以，不推荐使用for...in遍历数组。数组的遍历可以考虑使用for循环或while循环。
+
+// for循环
+for(let i = 0; i < a.length; i++) {
+  console.log(a[i]);
+}
+
+// while循环
+let i = 0;
+while (i < a.length) {
+  console.log(a[i]);
+  i++;
+}
+let l = a.length;
+while (l--) {
+  console.log(a[l]);
+}
+
+//
+数组的forEach方法，也可以用来遍历数组，同样只会遍历所有数字键
+a.forEach(function(color){
+    console.log(color);
+});
+```
+
+### 3.4 数组空位
+当数组的某个位置是空元素，即两个逗号之间没有任何值，我们称该数组存在空位（hole）。
+```
+//数组的空位不影响length属性
+let a = [1, , 1];
+a.length // 3
+
+//需要注意的是，如果最后一个元素后面有逗号，并不会产生空位。也就是说，有没有这个逗号，结果都是一样的
+let a = [1, 2, 3,];
+a.length // 3
+a // [1, 2, 3]
+
+//使用delete命令删除一个数组成员，会形成空位，并且不会影响length属性。
+let a = [1, 2, 3]
+delete a[1];
+a[1] // undefined
+a.length // 3
+```
+**特别注意**：数组的某个位置是空位，与某个位置是undefined，是不一样的。如果是空位，使用数组的forEach方法、for...in结构、以及Object.keys方法进行遍历，空位都会被跳过。
+```
+let a = [, , ,];
+
+a.forEach(function (x, i) {
+  console.log(i + '. ' + x);
+})
+// 不产生任何输出
+
+for (var i in a) {
+  console.log(i);
+}
+// 不产生任何输出
+
+Object.keys(a)
+// []
+
+let b = a.map((x) => {x*x})
+// []
+
+// 值得注意的是join用法对于空位和undefined行为相同
+let b = [undefined, undefined, undefined];
+a.join('-'); // "- -"
+b.join('-'); // "- -"
+```
+其中forEach方法按升序为数组中含有效值的每一项执行一次callback 函数，那些已删除或者未初始化的项将被跳过（例如在稀疏数组上）。
+
+forEach 接收两个参数: forEach(callback[, thisArg]);
+
+callback 函数会被依次传入三个参数：
+
+- 数组当前项的值
+- 数组当前项的索引
+- 数组对象本身
+
+map 做的事情和 for循环 一样，不同的是， map 会创建一个新数组。所以， 如果你不打算使用返回的新数组， 却依旧使用map的话， 这是违背map的设计初衷的。
+
+map 函数接收两个参数：map(callback(currentValue[, index[, array]]) {
+}[, thisArg])
+
+callback 也有三个参数：
+
+- currentValue
+- index
+- array
+
+thisArg(可选)
+
+forEach()的执行速度比map()慢
+### 3.5类似数组的对象
+
+如果一个对象的所有键名都是正整数或零，并且有length属性，那么这个对象就很像数组，语法上称为“类似数组的对象”（array-like object）。
+```
+let obj = {
+  0: 'a',
+  1: 'b',
+  2: 'c',
+  length: 3
+};
+
+obj[0] // 'a'
+obj[1] // 'b'
+obj.length // 3
+obj.push('d') // TypeError: obj.push is not a function 对象obj没有数组的push方法，使用该方法就会报错。
+```
+
+“类似数组的对象”的根本特征，就是具有length属性。只要有length属性，就可以认为这个对象类似于数组。但是有一个问题，这种**length属性不是动态值**，不会随着成员的变化而变化。
+```
+let obj = {
+  length: 0
+};
+obj[3] = 'd';
+obj.length // 0
+```
+典型的“类似数组的对象”是函数的arguments对象，以及大多数 DOM 元素集，还有字符串。
+```
+// arguments对象
+function args() { return arguments }
+var arrayLike = args('a', 'b');
+
+arrayLike[0] // 'a'
+arrayLike.length // 2
+arrayLike instanceof Array // false
+
+// DOM元素集
+var elts = document.getElementsByTagName('h3');
+elts.length // 3
+elts instanceof Array // false
+
+// 字符串
+'abc'[1] // 'b'
+'abc'.length // 3
+'abc' instanceof Array // false
+```
+上面代码包含三个例子，它们都不是数组（instanceof运算符返回false），但是看上去都非常像数组。
+
+数组的slice方法可以将“类似数组的对象”变成真正的数组。ES6中Array.from()内置工具函数也能实现同样的功能
+```
+let arr = Array.prototype.slice.call(arrayLike);
+
+let arr2 = Array.from(arguments)
+```
+
+## 4. 字符串
+如果长字符串必须分成多行，可以在每一行的尾部使用反斜杠。输出的时候还是单行，效果与写在同一行完全一样。注意，反斜杠的后面必须是换行符，而不能有其他字符（比如空格），否则会报错。连接运算符（+）可以连接多个单行字符串，将长字符串拆成多行书写，输出的时候也是单行。
+
+```
+//连接运算符（+）可以连接多个单行字符串，将长字符串拆成多行书写，输出的时候也是单行。
+longString = 'Long '
+  + 'long '
+  + 'long '
+  + 'string';
+
+//如果想输出多行字符串，有一种利用多行注释的变通方法。
+(function () { /*
+line 1
+line 2
+line 3
+*/}).toString().split('\n').slice(1, -1).join('\n')
+// "line 1
+// line 2
+// line 3"
+```
+### 4.1 字符串和数组
+字符串可以被视为字符数组，因此可以使用数组的方括号运算符，用来返回某个位置的字符（位置编号从0开始）。
+```
+let s = 'hello';
+s[0] // "h"
+s[1] // "e"
+s[4] // "o"
+```
+但是，字符串与数组的相似性仅此而已。实际上，无法改变字符串之中的单个字符。length属性返回字符串的长度，该属性也是无法改变的。
+```
+let s = 'hello';
+
+delete s[0];
+s // "hello"
+
+s[1] = 'a';
+s // "hello"
+
+s.length; // 5
+s.length = 3;
+s.length; // 5
+```
+
+### 4.2 字符集
+
+JavaScript 使用 Unicode 字符集。JavaScript 引擎内部，所有字符都用 Unicode 表示。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
